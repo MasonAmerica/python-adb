@@ -18,6 +18,7 @@ host side.
 """
 
 import collections
+import io
 import os
 import stat
 import struct
@@ -142,7 +143,7 @@ class FilesyncProtocol(object):
         cnxn.Send(b'SEND', fileinfo)
 
         if progress_callback:
-            total_bytes = os.fstat(datafile.fileno()).st_size if isinstance(datafile, file) else -1
+            total_bytes = os.fstat(datafile.fileno()).st_size if isinstance(datafile, io.IOBase) else -1
             progress = cls._HandleProgress(lambda current: progress_callback(filename, current, total_bytes))
             next(progress)
 
