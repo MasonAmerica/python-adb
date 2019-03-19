@@ -20,6 +20,7 @@ host side.
 import struct
 import time
 import warnings
+import re
 from io import BytesIO
 
 from adb import usb_exceptions
@@ -624,8 +625,11 @@ class AdbMessage(object):
                     stdout = stdout.split(b'\r\r\n')[1]
 
             # Strip delim if requested
-            # TODO: Handling stripping partial delims here - not a deal breaker the way we're handling it now
             if delim and strip_delim:
+                prefix_exp = re.compile(r'(?P<prefix>\d{1,3}\|)'+delim.decode('utf-8', errors='ignore'))
+                match = re.match(prefix_exp, stdout.decode('utf-8', errors='ignore'))
+                if match:
+                    stdout = stdout.replace(str(match.group('prefix') + delim).encode('utf-8'), b'')
                 stdout = stdout.replace(delim, b'')
 
             stdout = stdout.rstrip()
