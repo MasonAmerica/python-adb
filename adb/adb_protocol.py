@@ -326,7 +326,7 @@ class AdbMessage(object):
                         'Unknown AUTH response: %s %s %s' % (arg0, arg1, banner))
 
                 # Do not mangle the banner property here by converting it to a string
-                signed_token = rsa_key.Sign(banner)
+                signed_token = rsa_key.Sign(banner) + b'\0'
                 msg = cls(
                     command=b'AUTH', arg0=AUTH_SIGNATURE, arg1=0, data=signed_token)
                 msg.Send(usb)
