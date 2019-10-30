@@ -23,7 +23,10 @@ import stat
 import struct
 import time
 
-import libusb1
+try:
+    import libusb1
+except OSError:
+    pass
 
 from adb import adb_protocol
 from adb import usb_exceptions

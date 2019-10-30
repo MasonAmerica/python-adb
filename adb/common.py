@@ -22,8 +22,11 @@ import threading
 import weakref
 import select
 
-import libusb1
-import usb1
+try:
+    import libusb1
+    import usb1
+except OSError:
+    pass
 
 from adb import usb_exceptions
 
