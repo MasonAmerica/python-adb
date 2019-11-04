@@ -24,8 +24,8 @@ All timeouts are in milliseconds.
 
 import io
 import os
-import socket
 import posixpath
+import socket
 
 from adb import adb_protocol
 from adb import common
@@ -371,9 +371,12 @@ class AdbCommands(object):
           command: Shell command to run
           timeout_ms: Maximum time to allow the command to run.
         """
-        return self.protocol_handler.Command(
+        if not isinstance(command, bytes):
+            command = command.encode('utf-8')
+        data = self.protocol_handler.BytesCommand(
             self._handle, service=b'shell', command=command,
             timeout_ms=timeout_ms)
+        return data.decode('utf-8')
 
     def StreamingShell(self, command, timeout_ms=None):
         """Run command on the device, yielding each line of output.
@@ -389,6 +392,20 @@ class AdbCommands(object):
             self._handle, service=b'shell', command=command,
             timeout_ms=timeout_ms)
 
+    def BytesStreamingShell(self, command, timeout_ms=None):
+        """Run command on the device, yielding each line of output.
+
+        Args:
+          command: Command to run on the target.
+          timeout_ms: Maximum time to allow the command to run.
+
+        Yields:
+          The responses from the shell command.
+        """
+        return self.protocol_handler.BytesStreamingCommand(
+            self._handle, service=b'shell', command=command,
+            timeout_ms=timeout_ms)
+
     def Logcat(self, options, timeout_ms=None):
         """Run 'shell logcat' and stream the output to stdout.
 
@@ -397,6 +414,17 @@ class AdbCommands(object):
           timeout_ms: Maximum time to allow the command to run.
         """
         return self.StreamingShell('logcat %s' % options, timeout_ms)
+
+    def NonStreamingLogcat(self, options, timeout_ms=None):
+        """Run 'shell logcat' and stream the output to stdout.
+
+        Args:
+          options: Arguments to pass to 'logcat'.
+          timeout_ms: Maximum time to allow the command to run.
+        """
+        command = ('logcat %s' % options).encode('utf-8')
+        data = b''.join(self.BytesStreamingShell(command, timeout_ms))
+        return data.decode('utf-8')
 
     def InteractiveShell(self, cmd=None, strip_cmd=True, delim=None, strip_delim=True):
         """Get stdout from the currently open interactive shell and optionally run a command

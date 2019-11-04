@@ -19,7 +19,9 @@ host side.
 
 import struct
 import time
+import warnings
 from io import BytesIO
+
 from adb import usb_exceptions
 
 # Maximum amount of data in an ADB packet.
@@ -431,13 +433,65 @@ class AdbMessage(object):
         Yields:
           The responses from the service.
         """
+        warnings.warn(DeprecationWarning("This method may fail with utf-8 multi-bytes sequences"))
         if not isinstance(command, bytes):
             command = command.encode('utf8')
         connection = cls.Open(
             usb, destination=b'%s:%s' % (service, command),
             timeout_ms=timeout_ms)
         for data in connection.ReadUntilClose():
-            yield data.decode('utf8')
+            # TODO: find a fix for this code without changing public API
+            yield data.decode('utf-8')
+
+    @classmethod
+    def BytesCommand(cls, usb, service, command=b'', timeout_ms=None):
+        """One complete set of USB packets for a single command.
+
+        Sends service:command in a new connection, reading the data for the
+        response. All the data is held in memory, large responses will be slow and
+        can fill up memory.
+
+        Args:
+          usb: USB device handle with BulkRead and BulkWrite methods.
+          service: The service on the device to talk to.
+          command: The command to send to the service.
+          timeout_ms: Timeout for USB packets, in milliseconds.
+
+        Raises:
+          InterleavedDataError: Multiple streams running over usb.
+          InvalidCommandError: Got an unexpected response command.
+
+        Returns:
+          The response from the service.
+        """
+        return b''.join(cls.BytesStreamingCommand(usb, service, command, timeout_ms))
+
+    @classmethod
+    def BytesStreamingCommand(cls, usb, service, command=b'', timeout_ms=None):
+        """One complete set of USB packets for a single command.
+
+        Sends service:command in a new connection, reading the data for the
+        response. All the data is held in memory, large responses will be slow and
+        can fill up memory.
+
+        Args:
+          usb: USB device handle with BulkRead and BulkWrite methods.
+          service: The service on the device to talk to.
+          command: The command to send to the service.
+          timeout_ms: Timeout for USB packets, in milliseconds.
+
+        Raises:
+          InterleavedDataError: Multiple streams running over usb.
+          InvalidCommandError: Got an unexpected response command.
+
+        Returns:
+          The response from the service.
+        """
+        connection = cls.Open(
+            usb, destination=b'%s:%s' % (service, command),
+            timeout_ms=timeout_ms)
+        for data in connection.ReadUntilClose():
+            yield data
 
     @classmethod
     def InteractiveShellCommand(cls, conn, cmd=None, strip_cmd=True, delim=None, strip_delim=True, clean_stdout=True):
