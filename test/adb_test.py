@@ -180,7 +180,7 @@ class AdbTest(BaseAdbTest):
       dev.ConnectDevice(handle=usb, banner=BANNER)
 
       res = dev.Shell(command)
-      self.assertEqual('\u3042', res)
+      self.assertEqual(u'\u3042', res)
 
   def testBytesStreamingResponseShell(self):
       command = b'keepin it real big'
@@ -209,7 +209,7 @@ class AdbTest(BaseAdbTest):
       dev = adb_commands.AdbCommands()
       dev.ConnectDevice(handle=usb, banner=BANNER)
 
-      res = dev.NonStreamingLogcat('test\u3042')
+      res = dev.NonStreamingLogcat(u'test\u3042')
       self.assertEqual(u'\u3042', res)
 
   def testReboot(self):
