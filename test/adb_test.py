@@ -14,18 +14,18 @@
 # limitations under the License.
 """Tests for adb."""
 
-from io import BytesIO
 import struct
 import unittest
+from io import BytesIO
+from unittest import skip
+
+import common_stub
 from mock import mock
 
-
-from adb import common
 from adb import adb_commands
 from adb import adb_protocol
-from adb.usb_exceptions import TcpTimeoutException, DeviceNotFoundError
-import common_stub
-
+from adb import common
+from adb.usb_exceptions import TcpTimeoutException
 
 BANNER = b'blazetest'
 LOCAL_ID = 1
@@ -145,7 +145,7 @@ class AdbTest(BaseAdbTest):
 
   def testStreamingResponseShell(self):
     command = b'keepin it real big'
-    # expect multiple lines
+    # expect multiple bulks
 
     responses = ['other stuff, ', 'and some words.']
 
@@ -154,10 +154,68 @@ class AdbTest(BaseAdbTest):
     dev = adb_commands.AdbCommands()
     dev.ConnectDevice(handle=usb, banner=BANNER)
     response_count = 0
-    for (expected,actual) in zip(responses, dev.StreamingShell(command)):
+    for (expected, actual) in zip(responses, dev.StreamingShell(command)):
       self.assertEqual(expected, actual)
       response_count = response_count + 1
     self.assertEqual(len(responses), response_count)
+
+  @skip('Need fixing')
+  def testStreamingResponseShellWithMultiBytesSequences(self):
+      command = b'keepin it real big'
+      # expect multiple bulks
+
+      responses = [b'\xe2', b'\x81\x82']  # utf-8 encoded split Hiragana A (U+3042)
+
+      usb = self._ExpectCommand(b'shell', command, *responses)
+
+      dev = adb_commands.AdbCommands()
+      dev.ConnectDevice(handle=usb, banner=BANNER)
+
+      dev.StreamingShell(command)
+
+  def testShellWithMultiBytesSequences(self):
+      command = b'keepin it real big'
+      # expect multiple bulks
+
+      responses = [b'\xe3', b'\x81\x82']  # utf-8 encoded split Hiragana A (U+3042)
+
+      usb = self._ExpectCommand(b'shell', command, *responses)
+
+      dev = adb_commands.AdbCommands()
+      dev.ConnectDevice(handle=usb, banner=BANNER)
+
+      res = dev.Shell(command)
+      self.assertEqual(u'\u3042', res)
+
+  def testBytesStreamingResponseShell(self):
+      command = b'keepin it real big'
+      # expect multiple bulks
+
+      responses = [b'other stuff, ', b'and some words.']
+
+      usb = self._ExpectCommand(b'shell', command, *responses)
+
+      dev = adb_commands.AdbCommands()
+      dev.ConnectDevice(handle=usb, banner=BANNER)
+      response_count = 0
+      for (expected, actual) in zip(responses, dev.BytesStreamingShell(command)):
+          self.assertEqual(expected, actual)
+          response_count = response_count + 1
+      self.assertEqual(len(responses), response_count)
+
+  def testNonStreamingLogcatWithMultiBytesSequences(self):
+      command = b'logcat test\xe3\x81\x82'
+      # expect multiple bulks
+
+      responses = [b'\xe3', b'\x81\x82']  # utf-8 encoded split Hiragana A (U+3042)
+
+      usb = self._ExpectCommand(b'shell', command, *responses)
+
+      dev = adb_commands.AdbCommands()
+      dev.ConnectDevice(handle=usb, banner=BANNER)
+
+      res = dev.NonStreamingLogcat(u'test\u3042')
+      self.assertEqual(u'\u3042', res)
 
   def testReboot(self):
     usb = self._ExpectCommand(b'reboot', b'', b'')
