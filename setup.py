@@ -14,22 +14,6 @@
 
 from setuptools import setup
 
-# Figure out if the system already has a supported Crypto library
-rsa_signer_library = 'cryptography'
-try:
-  import rsa
-
-  rsa_signer_library = 'rsa'
-except ImportError:
-    try:
-        from Crypto.Hash import SHA256
-        from Crypto.PublicKey import RSA
-        from Crypto.Signature import pkcs1_15
-
-        rsa_signer_library = 'pycryptodome'
-    except ImportError:
-        pass
-
 
 setup(
     name = 'adb',
@@ -62,7 +46,7 @@ Android project's ADB.
 
     install_requires = [
         'libusb1>=1.0.16',
-        rsa_signer_library
+        'cryptography'
     ],
 
     extra_requires = {
