@@ -18,7 +18,7 @@ from setuptools import setup
 setup(
     name = 'adb',
     packages = ['adb'],
-    version = '1.3.0.3',
+    version = '1.3.0.6',
     author = 'Fahrzin Hemmati',
     author_email = 'fahhem@gmail.com',
     maintainer = 'Fahrzin Hemmati',
