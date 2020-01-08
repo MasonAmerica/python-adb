@@ -327,7 +327,7 @@ class AdbMessage(object):
                         'Unknown AUTH response: %s %s %s' % (arg0, arg1, banner))
 
                 # Do not mangle the banner property here by converting it to a string
-                signed_token = rsa_key.Sign(banner) + b'\0'
+                signed_token = rsa_key.Sign(banner)
                 msg = cls(
                     command=b'AUTH', arg0=AUTH_SIGNATURE, arg1=0, data=signed_token)
                 msg.Send(usb)
@@ -335,9 +335,12 @@ class AdbMessage(object):
                 if cmd == b'CNXN':
                     return banner
             # None of the keys worked, so send a public key.
+            pubkey = rsa_keys[0].GetPublicKey()
+            if not isinstance(pubkey, (bytes, bytearray)):
+                pubkey = bytearray(pubkey, 'utf-8')
             msg = cls(
                 command=b'AUTH', arg0=AUTH_RSAPUBLICKEY, arg1=0,
-                data=rsa_keys[0].GetPublicKey() + b'\0')
+                data=pubkey + b'\0')
             msg.Send(usb)
             try:
                 cmd, arg0, unused_arg1, banner = cls.Read(
